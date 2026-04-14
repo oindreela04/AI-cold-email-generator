@@ -1,1 +1,0 @@
-# AI-cold-email-generator
