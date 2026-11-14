@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outreach — AI Cold Email Generator</title>
+<meta name="description" content="Upload your resume, get matched companies and live openings, and send a personalized cold email to each.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f2ea; --card:#fffdf8; --ink:#1d1b18; --muted:#6c665c; --line:#e3dccd;
+  --accent:#d4482b; --accent-soft:#fbe6df; --ok:#2f7d4f; --ok-soft:#e1f1e6; --radius:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif}
+a{color:inherit}
+.wrap{max-width:1120px;margin:0 auto;padding:32px 20px 90px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+h1{font-family:Fraunces,serif;font-weight:700;font-size:42px;line-height:1.05;margin:0;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--accent)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:580px}
+h2{font-family:Fraunces,serif;font-weight:500;font-size:24px;margin:0 0 4px}
+h3{font-size:16px;margin:0}
+.nav{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.step{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;color:var(--muted);background:var(--card);cursor:pointer;user-select:none}
+.step.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.step.done{border-color:var(--ok);color:var(--ok)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+.grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+@media(max-width:820px){.grid2{grid-template-columns:1fr} h1{font-size:32px}}
+label{display:block;font-size:13px;font-weight:600;margin:14px 0 6px}
+label small{font-weight:400;color:var(--muted)}
+input[type=text],input[type=email],input[type=password],input[type=number],select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font:inherit;color:inherit}
+textarea{resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:140px}
+.drop{border:1.5px dashed #cfc6b3;border-radius:12px;padding:22px;text-align:center;cursor:pointer;background:#fbf8f1;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop b{display:block}
+.drop span{color:var(--muted);font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--ink);background:var(--ink);color:#fff;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.accent{background:var(--accent);border-color:var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--ink)}
+.btn.sm{padding:6px 10px;font-size:13px;border-radius:8px}
+.switch{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:14px;cursor:pointer}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;background:#efe9dc;font-size:12px;margin:2px 4px 2px 0}
+.pill.acc{background:var(--accent-soft);color:#9b2f18}
+.muted{color:var(--muted)}
+.note{font-size:13px;color:var(--muted);background:#f1ece1;border-radius:10px;padding:10px 12px;margin-top:14px}
+.err{color:#a3261a;background:#fde9e5;border-radius:10px;padding:10px 12px;margin-top:12px;font-size:14px}
+.okmsg{color:var(--ok);background:var(--ok-soft);border-radius:10px;padding:10px 12px;margin-top:12px;font-size:14px}
+.hidden{display:none!important}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:26px 0 4px;flex-wrap:wrap}
+.companies{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px;margin-top:12px}
+.co{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;flex-direction:column;gap:8px;position:relative;cursor:pointer;transition:.15s}
+.co:hover{border-color:#bdb39e}
+.co.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.check{position:absolute;top:16px;right:16px;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--line);display:grid;place-items:center;font-size:14px;color:#fff;background:#fff}
+.sel .check{background:var(--accent);border-color:var(--accent)}
+.fit{font:700 13px Inter;color:var(--ok)}
+.co p{margin:0;font-size:14px}
+.co h3{padding-right:30px}
+.links{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;margin-top:auto;padding-top:6px}
+.jobs{display:grid;gap:8px;margin-top:12px}
+.job{display:flex;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;position:relative}
+.job.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.job .check{position:static;flex:none}
+.job .grow{flex:1;min-width:0}
+.job .meta{font-size:12px;color:var(--muted)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px;position:sticky;bottom:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.email{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin-top:14px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.status{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:#efe9dc;color:var(--muted)}
+.status.sent{background:var(--ok-soft);color:var(--ok)}
+.status.ready{background:var(--accent-soft);color:#9b2f18}
+.status.error{background:#fde9e5;color:#a3261a}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.actions select{width:auto;padding:6px 10px;font-size:13px}
+.spinner{width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;align-items:center;gap:10px;color:var(--muted);padding:30px 0;justify-content:center}
+.progress{height:6px;background:#ece5d6;border-radius:99px;overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .3s}
+.tip{font-size:12px;color:var(--muted);margin-top:6px}
+.stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:12px}
+.stats div b{display:block;font:700 26px Fraunces,serif}
+.stats div span{font-size:12px;color:var(--muted)}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;transition:.2s;pointer-events:none;z-index:20}
+.toast.on{opacity:1}
+.overlay{position:fixed;inset:0;background:rgba(29,27,24,.35);display:flex;justify-content:flex-end;z-index:10}
+.drawer{width:min(440px,100%);height:100%;overflow:auto;background:var(--card);padding:26px;border-left:1px solid var(--line)}
+.drawer h4{margin:22px 0 0;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ok-line{font-size:13px;color:var(--ok);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Out<em>reach</em></h1>
+      <p class="sub">Drop in your resume. Get companies and live openings that fit you, then a cold email written for each one — sent from your own inbox.</p>
+    </div>
+    <nav class="nav">
+      <div class="step on" data-go="1">1 · Resume</div>
+      <div class="step" data-go="2">2 · Matches</div>
+      <div class="step" data-go="3">3 · Emails</div>
+      <button class="btn ghost sm" id="openSettings">⚙ Settings</button>
+    </nav>
+  </header>
+
+  <div id="setupBanner" class="err hidden"></div>
+
+  <!-- STEP 1 -->
+  <section id="s1">
+    <div class="grid2">
+      <div class="card">
+        <h2>Your resume</h2>
+        <p class="muted" style="margin:0 0 12px">PDF, Word (.docx) or text — or paste it below.</p>
+        <div class="drop" id="drop">
+          <b id="dropTitle">Drop your resume here</b>
+          <span>or click to choose a file</span>
+          <input type="file" id="file" accept=".pdf,.docx,.txt,.md" hidden>
+        </div>
+        <label for="resume">Resume text <small>— edit anything that didn't come through cleanly</small></label>
+        <textarea id="resume" rows="14" placeholder="Paste your resume here…"></textarea>
+      </div>
+      <div class="card">
+        <h2>What you're after</h2>
+        <label for="role">Target roles</label>
+        <input type="text" id="role" placeholder="e.g. Data analyst, Backend developer intern">
+        <div class="row">
+          <div><label for="loc">Location</label><input type="text" id="loc" placeholder="e.g. Bengaluru, Remote"></div>
+          <div><label for="level">Level</label>
+            <select id="level"><option value="">Any</option><option>Internship</option><option>Entry level</option><option>Mid level</option><option>Senior</option><option>Lead / Manager</option></select></div>
+        </div>
+        <div class="row">
+          <div><label for="ctype">Company type</label>
+            <select id="ctype"><option value="">Any</option><option>Early-stage startups</option><option>Growth-stage startups</option><option>Mid-size companies</option><option>Big tech / enterprises</option></select></div>
+          <div><label for="count">How many companies</label>
+            <select id="count"><option>6</option><option selected>9</option><option>12</option><option>15</option></select></div>
+        </div>
+        <label for="industries">Industries you like <small>(optional)</small></label>
+        <input type="text" id="industries" placeholder="e.g. fintech, healthtech, dev tools">
+        <div class="row">
+          <div><label for="myname">Your name</label><input type="text" id="myname" placeholder="Signs the emails"></div>
+          <div><label for="tone">Email tone</label>
+            <select id="tone"><option>Warm & concise</option><option>Confident & direct</option><option>Formal</option><option>Friendly & casual</option></select></div>
+        </div>
+        <label for="links">Links for your signature <small>(LinkedIn, GitHub, portfolio)</small></label>
+        <input type="text" id="links" placeholder="https://…">
+        <label class="switch"><input type="checkbox" id="live" checked> Also pull live job openings</label>
+        <div style="margin-top:18px"><button class="btn accent" id="analyze">Find matching companies →</button></div>
+        <div id="err1" class="err hidden"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="s2" class="hidden">
+    <div id="profileCard" class="card hidden"></div>
+    <div id="matchesLoading" class="loading hidden"><span class="spinner"></span><span id="loadingText">Reading your resume and finding companies that fit…</span></div>
+    <div id="err2" class="err hidden"></div>
+
+    <div id="coSection" class="hidden">
+      <div class="section-title"><h2>Companies that fit you</h2>
+        <div class="row" style="flex:0 1 auto"><button class="btn ghost sm" id="selAllCo">Select all</button><button class="btn ghost sm" id="more">+ Suggest more</button></div></div>
+      <div class="muted" style="font-size:13px">AI-picked from your resume. Use <b>Openings</b> on each card to see what's posted today.</div>
+      <div id="companies" class="companies"></div>
+    </div>
+
+    <div id="jobSection" class="hidden">
+      <div class="section-title"><h2>Live openings <span class="muted" id="jobCount" style="font-size:16px"></span></h2></div>
+      <div class="muted" style="font-size:13px" id="jobNote">Real postings from public job boards, ranked by how well they match your skills.</div>
+      <div id="jobs" class="jobs"></div>
+    </div>
+
+    <div class="toolbar hidden" id="toolbar2">
+      <span class="muted" id="selCount">0 selected</span>
+      <button class="btn accent" id="genAll" disabled>Write emails →</button>
+    </div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="s3" class="hidden">
+    <div class="card">
+      <div class="head">
+        <div><h2>Your emails</h2><p class="muted" style="margin:0">Each one is written for that company. Add who it's going to, tweak anything, then send.</p></div>
+      </div>
+      <div class="stats">
+        <div><b id="stWritten">0</b><span>written</span></div>
+        <div><b id="stReady">0</b><span>ready (have recipient)</span></div>
+        <div><b id="stSent">0</b><span>sent</span></div>
+      </div>
+      <div class="progress hidden" id="prog"><i></i></div>
+      <div class="row" style="margin-top:16px;align-items:flex-end">
+        <div style="flex:0 0 270px"><label for="sendVia" style="margin-top:0">Send with</label>
+          <select id="sendVia"><option value="smtp">Send directly (Gmail SMTP)</option><option value="gmail">Open as Gmail draft</option><option value="outlook">Open as Outlook draft</option></select></div>
+        <div style="flex:0 0 auto" class="row">
+          <button class="btn ghost" id="testSend">Send me a test</button>
+          <button class="btn accent" id="sendAll" disabled>Send all ready</button>
+          <button class="btn ghost hidden" id="stopAll">Stop</button>
+        </div>
+      </div>
+      <div class="tip" id="sendTip"></div>
+      <div id="sendMsg" class="hidden"></div>
+    </div>
+    <div id="emails"></div>
+  </section>
+</div>
+
+<!-- Settings drawer -->
+<div class="overlay hidden" id="settings">
+  <div class="drawer">
+    <div class="head"><h2>Settings</h2><button class="btn ghost sm" id="closeSettings">Close</button></div>
+    <p class="muted" style="font-size:13px">Saved only in this browser. Anything already set on the server (Vercel env vars) is used automatically.</p>
+
+    <div id="appPwBox" class="hidden">
+      <h4>Access</h4>
+      <label for="appPw">App password</label>
+      <input type="password" id="appPw" placeholder="Set by whoever deployed this app">
+    </div>
+
+    <h4>AI</h4>
+    <div id="aiServer" class="ok-line hidden">✓ OpenAI key is set on the server</div>
+    <label for="oaKey">Your OpenAI API key <small id="oaOpt">(required)</small></label>
+    <input type="password" id="oaKey" placeholder="sk-…">
+    <label for="oaModel">Model <small>(optional)</small></label>
+    <input type="text" id="oaModel" placeholder="gpt-4o-mini">
+
+    <h4>Sending</h4>
+    <div id="smtpServer" class="ok-line hidden"></div>
+    <label for="smtpUser">Send from (Gmail address)</label>
+    <input type="email" id="smtpUser" placeholder="you@gmail.com">
+    <label for="smtpPass">Gmail app password <small>— <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener">create one ↗</a></small></label>
+    <input type="password" id="smtpPass" placeholder="16-character app password">
+    <div class="tip">Needs 2-Step Verification on your Google account. It's a separate password just for this app — you can revoke it any time. Sent over HTTPS only when you send.</div>
+    <label class="switch"><input type="checkbox" id="attach" checked> Attach my resume to each email</label>
+    <div class="row">
+      <div><label for="delay">Seconds between emails</label><input type="number" id="delay" min="5" max="300" value="30"></div>
+      <div><label for="maxBatch">Max per batch</label><input type="number" id="maxBatch" min="1" max="50" value="15"></div>
+    </div>
+    <div class="tip">Spacing sends out and keeping batches small keeps your Gmail out of spam filters.</div>
+    <div style="margin-top:22px"><button class="btn accent" id="saveSettings">Save</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const state = { profile:null, targets:[], selected:new Set(), drafts:{}, file:null, server:{} };
+let stopFlag = false;
+
+// ---------------- storage (browser only) ----------------
+const KEY="outreach-v2", SKEY="outreach-settings";
+const FORM=["resume","role","loc","level","ctype","count","industries","myname","tone","links"];
+const SET=["appPw","oaKey","oaModel","smtpUser","smtpPass","delay","maxBatch"];
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify({
+  profile:state.profile, targets:state.targets, selected:[...state.selected], drafts:state.drafts,
+  form:Object.fromEntries(FORM.map(id=>[id,$("#"+id).value])), live:$("#live").checked
+})); }catch(e){} }
+function load(){ try{
+  const d=JSON.parse(localStorage.getItem(KEY)||"null"); if(d){
+    Object.entries(d.form||{}).forEach(([k,v])=>{ if($("#"+k)) $("#"+k).value=v; });
+    $("#live").checked = d.live!==false;
+    state.profile=d.profile; state.targets=d.targets||[]; state.selected=new Set(d.selected||[]); state.drafts=d.drafts||{};
+  }
+  const s=JSON.parse(localStorage.getItem(SKEY)||"null"); if(s){
+    SET.forEach(id=>{ if(s[id]!=null) $("#"+id).value=s[id]; }); $("#attach").checked=s.attach!==false;
+  }
+}catch(e){} }
+function saveSettings(){ try{
+  localStorage.setItem(SKEY, JSON.stringify({...Object.fromEntries(SET.map(id=>[id,$("#"+id).value])), attach:$("#attach").checked}));
+}catch(e){} }
+
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2400); }
+function showErr(el,m){ el.textContent=m; el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+function show(el){ el.classList.remove("hidden"); }
+
+// ---------------- API ----------------
+function headers(json=true){
+  const h={}; if(json) h["Content-Type"]="application/json";
+  if($("#appPw").value) h["X-App-Password"]=$("#appPw").value;
+  if($("#oaKey").value) h["X-OpenAI-Key"]=$("#oaKey").value;
+  if($("#oaModel").value) h["X-OpenAI-Model"]=$("#oaModel").value;
+  return h;
+}
+async function api(path, body, isForm=false){
+  let res;
+  try{
+    res = await fetch(path, { method:"POST", headers:headers(!isForm), body: isForm? body : JSON.stringify(body) });
+  }catch(e){ throw new Error("Can't reach the server — check your connection."); }
+  let data={}; try{ data=await res.json(); }catch(e){}
+  if(!res.ok){
+    let msg = data.detail;
+    if(Array.isArray(msg)) msg = msg.map(d=>d.msg).join("; ");
+    if(res.status===401 || res.status===400) setTimeout(()=>{ if(/password|key|Settings/i.test(msg||"")) openSettings(); },400);
+    if(res.status===504) msg="The server took too long. Try again, or ask for fewer companies.";
+    throw new Error(msg || `Request failed (${res.status})`);
+  }
+  return data;
+}
+async function loadConfig(){
+  try{ state.server = await (await fetch("/api/config")).json(); }catch(e){ state.server={}; }
+  const s=state.server;
+  $("#appPwBox").classList.toggle("hidden", !s.needs_app_password);
+  $("#aiServer").classList.toggle("hidden", !s.ai_ready);
+  $("#oaOpt").textContent = s.ai_ready ? "(optional — overrides the server key)" : "(required)";
+  if(s.model) $("#oaModel").placeholder=s.model;
+  if(s.smtp_ready){ show($("#smtpServer")); $("#smtpServer").textContent=`✓ Server sends from ${s.sender_email}. Fill these only to send from a different account.`; }
+  checkSetup();
+}
+function checkSetup(){
+  const s=state.server, b=$("#setupBanner"); const msgs=[];
+  if(s.needs_app_password && !$("#appPw").value) msgs.push("enter the app password");
+  if(!s.ai_ready && !$("#oaKey").value) msgs.push("add an OpenAI API key");
+  if(msgs.length){ b.innerHTML=`To get started, open <a href="#" id="bannerLink">Settings</a> and ${msgs.join(" and ")}.`; show(b); $("#bannerLink").onclick=e=>{e.preventDefault();openSettings();}; }
+  else hide(b);
+  updateSendTip();
+}
+function smtpCreds(){ const u=$("#smtpUser").value.trim(), p=$("#smtpPass").value.trim(); return (u&&p)?{user:u,password:p}:null; }
+function canSmtp(){ return !!smtpCreds() || !!state.server.smtp_ready; }
+function senderAddr(){ return $("#smtpUser").value.trim() || state.server.sender_email || ""; }
+
+// ---------------- settings drawer ----------------
+function openSettings(){ show($("#settings")); }
+$("#openSettings").onclick=openSettings;
+$("#closeSettings").onclick=()=>hide($("#settings"));
+$("#settings").onclick=e=>{ if(e.target.id==="settings") hide($("#settings")); };
+$("#saveSettings").onclick=()=>{ saveSettings(); hide($("#settings")); checkSetup(); toast("Settings saved"); };
+
+// ---------------- steps ----------------
+function go(n){
+  [1,2,3].forEach(i=>$("#s"+i).classList.toggle("hidden", i!==n));
+  document.querySelectorAll(".step").forEach(s=>{
+    const i=+s.dataset.go; s.classList.toggle("on", i===n);
+    s.classList.toggle("done", i!==n && ((i===1 && state.profile) || (i===2 && state.targets.length) || (i===3 && Object.keys(state.drafts).length)));
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+document.querySelectorAll(".step").forEach(s=>s.onclick=()=>{
+  const n=+s.dataset.go;
+  if(n===2 && !state.targets.length) return toast("Analyze your resume first");
+  if(n===3 && !Object.keys(state.drafts).length) return toast("Pick companies and write emails first");
+  if(n===3) renderEmails();
+  go(n);
+});
+
+// ---------------- resume upload ----------------
+const drop=$("#drop"), fileIn=$("#file");
+drop.onclick=()=>fileIn.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add("over")};
+drop.ondragleave=()=>drop.classList.remove("over");
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove("over"); if(e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);};
+fileIn.onchange=()=>{ if(fileIn.files[0]) readFile(fileIn.files[0]); };
+
+async function readFile(f){
+  hide($("#err1"));
+  if(f.size>3*1024*1024) return showErr($("#err1"),"That file is over 3 MB — try a smaller PDF.");
+  $("#dropTitle").innerHTML='<span class="spinner"></span> Reading '+esc(f.name)+'…';
+  try{
+    const buf=await f.arrayBuffer();
+    let bin=""; const bytes=new Uint8Array(buf); for(let i=0;i<bytes.length;i+=0x8000) bin+=String.fromCharCode.apply(null, bytes.subarray(i,i+0x8000));
+    state.file={name:f.name, b64:btoa(bin)};
+    try{ sessionStorage.setItem("outreach-file", JSON.stringify(state.file)); }catch(e){}
+    const fd=new FormData(); fd.append("file", f);
+    const {text}=await api("/api/parse", fd, true);
+    $("#resume").value=text; $("#dropTitle").textContent="✓ "+f.name; save();
+  }catch(e){
+    $("#dropTitle").textContent="Drop your resume here";
+    showErr($("#err1"), e.message);
+  }
+}
+
+function prefs(){ return { target_roles:$("#role").value, location:$("#loc").value, level:$("#level").value, company_type:$("#ctype").value, industries:$("#industries").value }; }
+
+// ---------------- analyze ----------------
+const tid=(k,c,r)=>k[0]+Array.from(`${c}|${r}`.toLowerCase()).reduce((h,ch)=>(h*31+ch.charCodeAt(0))>>>0,7).toString(36);
+function companyTarget(c){ return { id:tid("company",c.name,c.role), kind:"company", company:c.name, role:c.role, domain:c.domain, industry:c.industry, stage:c.stage, hq:c.hq, fit:Math.round(+c.fit_score||0), why:c.why_fit, hook:c.hook, contacts:c.contact_titles||[] }; }
+function jobTarget(j){ return { id:tid("job",j.company,j.title), kind:"job", company:j.company, role:j.title, location:j.location, url:j.url, posted:j.posted, source:j.source, fit:j.match||0, job_description:j.description, contacts:["Hiring manager","Recruiter"] }; }
+
+$("#analyze").onclick=async()=>{
+  hide($("#err1")); hide($("#err2"));
+  const resume=$("#resume").value.trim();
+  if(resume.length<80) return showErr($("#err1"),"Add your resume first — upload a file or paste the text.");
+  save();
+  go(2); hide($("#profileCard")); hide($("#coSection")); hide($("#jobSection")); hide($("#toolbar2"));
+  $("#loadingText").textContent = $("#live").checked ? "Reading your resume, picking companies and pulling live openings… (about 20–40s)" : "Reading your resume and picking companies… (about 20s)";
+  show($("#matchesLoading")); $("#analyze").disabled=true;
+  try{
+    const r=await api("/api/analyze",{resume, prefs:prefs(), count:+$("#count").value, live_jobs:$("#live").checked});
+    state.profile=r.profile; state.drafts={}; state.selected.clear();
+    const seen=new Set();
+    state.targets=[...r.companies.map(companyTarget), ...r.jobs.map(jobTarget)].filter(t=>!seen.has(t.id)&&seen.add(t.id));
+    state.jobErrors=r.job_errors||[];
+    if(!$("#myname").value && r.profile.name) $("#myname").value=r.profile.name;
+    save(); renderMatches();
+  }catch(e){ showErr($("#err2"), e.message); }
+  finally{ hide($("#matchesLoading")); $("#analyze").disabled=false; }
+};
+
+function renderMatches(){
+  const p=state.profile; if(!p) return;
+  const pc=$("#profileCard"); show(pc);
+  pc.innerHTML=`<div class="head"><div><h2>${esc(p.name||"Your profile")}</h2><p class="muted" style="margin:0">${esc(p.headline||"")}${p.years_experience?" · "+esc(p.years_experience):""}</p></div>
+    <button class="btn ghost sm" id="editResume">Edit resume</button></div>
+    <div style="margin-top:12px">${(p.top_skills||[]).map(s=>`<span class="pill">${esc(s)}</span>`).join("")}</div>
+    ${(p.best_fit_roles||[]).length?`<div style="margin-top:8px"><span class="muted" style="font-size:13px">Best-fit roles: </span>${p.best_fit_roles.map(s=>`<span class="pill acc">${esc(s)}</span>`).join("")}</div>`:""}`;
+  $("#editResume").onclick=()=>go(1);
+
+  const cos=state.targets.filter(t=>t.kind==="company"), jobs=state.targets.filter(t=>t.kind==="job").sort((a,b)=>b.fit-a.fit);
+  $("#coSection").classList.toggle("hidden", !cos.length);
+  $("#companies").innerHTML=cos.map(c=>{
+    const q=encodeURIComponent(`${c.role} ${c.company}`), l=encodeURIComponent($("#loc").value||"");
+    const who=encodeURIComponent(`${(c.contacts[0]||"recruiter")} ${c.company}`);
+    return `<div class="co ${state.selected.has(c.id)?"sel":""}" data-id="${c.id}">
+      <div class="check">✓</div>
+      <div><h3>${esc(c.company)}</h3><div class="muted" style="font-size:13px">${[c.industry,c.stage,c.hq].filter(Boolean).map(esc).join(" · ")}</div></div>
+      <div><span class="fit">${c.fit}% fit</span> <span class="pill acc">${esc(c.role)}</span></div>
+      <p>${esc(c.why)}</p>
+      ${c.contacts.length?`<p class="muted" style="font-size:13px"><b>Reach out to:</b> ${esc(c.contacts.join(", "))}</p>`:""}
+      <div class="links">
+        <a href="https://www.linkedin.com/jobs/search/?keywords=${q}${l?"&location="+l:""}" target="_blank" rel="noopener">Openings ↗</a>
+        ${c.domain?`<a href="https://${esc(c.domain)}" target="_blank" rel="noopener">Website ↗</a>`:""}
+        <a href="https://www.linkedin.com/search/results/people/?keywords=${who}" target="_blank" rel="noopener">Find the person ↗</a>
+      </div></div>`;
+  }).join("");
+
+  const live=$("#live").checked;
+  $("#jobSection").classList.toggle("hidden", !live);
+  $("#jobCount").textContent = jobs.length?`(${jobs.length})`:"";
+  $("#jobs").innerHTML = jobs.length ? jobs.map(j=>`
+    <div class="job ${state.selected.has(j.id)?"sel":""}" data-id="${j.id}">
+      <div class="check">✓</div>
+      <div class="grow"><b>${esc(j.role)}</b> <span class="muted">at</span> <b>${esc(j.company)}</b>
+        <div class="meta">${[j.location, j.posted?"posted "+j.posted:"", j.source].filter(Boolean).map(esc).join(" · ")}</div></div>
+      <span class="fit">${j.fit} match</span>
+      ${j.url?`<a class="btn ghost sm" href="${esc(j.url)}" target="_blank" rel="noopener">View ↗</a>`:""}
+    </div>`).join("")
+    : `<div class="note">No live openings matched. Try a broader target role${state.server.adzuna?"":", or add an Adzuna key on the server for India-wide listings (see README)"}.</div>`;
+  if((state.jobErrors||[]).length) $("#jobNote").textContent="Real postings from public job boards, ranked by skill match. (Some sources didn't respond: "+state.jobErrors.map(e=>e.split(":")[0]).join(", ")+")";
+
+  document.querySelectorAll(".co, .job").forEach(el=>el.onclick=e=>{
+    if(e.target.closest("a")) return;
+    const id=el.dataset.id; state.selected.has(id)?state.selected.delete(id):state.selected.add(id);
+    el.classList.toggle("sel"); updateSel(); save();
+  });
+  show($("#toolbar2")); updateSel();
+}
+function updateSel(){
+  const n=state.selected.size;
+  $("#selCount").textContent=`${n} selected`;
+  $("#genAll").disabled=!n; $("#genAll").textContent=`Write ${n} email${n===1?"":"s"} →`;
+  const cos=state.targets.filter(t=>t.kind==="company");
+  $("#selAllCo").textContent = cos.length && cos.every(c=>state.selected.has(c.id)) ? "Clear" : "Select all";
+}
+$("#selAllCo").onclick=()=>{
+  const cos=state.targets.filter(t=>t.kind==="company");
+  const all=cos.every(c=>state.selected.has(c.id));
+  cos.forEach(c=>all?state.selected.delete(c.id):state.selected.add(c.id));
+  renderMatches(); save();
+};
+$("#more").onclick=async()=>{
+  hide($("#err2")); const b=$("#more"); b.disabled=true; b.innerHTML='<span class="spinner"></span> Finding…';
+  try{
+    const r=await api("/api/more",{resume:$("#resume").value, profile:state.profile, prefs:prefs(), exclude:state.targets.filter(t=>t.kind==="company").map(t=>t.company)});
+    const ids=new Set(state.targets.map(t=>t.id)); const add=r.companies.map(companyTarget).filter(t=>!ids.has(t.id));
+    const firstJob=state.targets.findIndex(t=>t.kind==="job");
+    state.targets.splice(firstJob<0?state.targets.length:firstJob,0,...add);
+    save(); renderMatches(); toast(`Added ${add.length} companies`);
+  }catch(e){ showErr($("#err2"), e.message); }
+  finally{ b.disabled=false; b.textContent="+ Suggest more"; }
+};
+
+// ---------------- write emails ----------------
+function emailReq(t, extra={}){
+  return { target:t, profile:state.profile, resume:$("#resume").value, sender_name:$("#myname").value, tone:$("#tone").value, links:$("#links").value, ...extra };
+}
+$("#genAll").onclick=async()=>{
+  const todo=state.targets.filter(t=>state.selected.has(t.id) && !(state.drafts[t.id]&&state.drafts[t.id].status!=="error"));
+  go(3);
+  if(!todo.length){ renderEmails(); return; }
+  todo.forEach(t=>state.drafts[t.id]={to:"",rname:"",subject:"",body:"",status:"writing"});
+  renderEmails();
+  const prog=$("#prog"); show(prog); prog.firstElementChild.style.width="0";
+  let done=0; const q=[...todo];
+  async function worker(){
+    while(q.length){
+      const t=q.shift();
+      try{ const r=await api("/api/email", emailReq(t)); Object.assign(state.drafts[t.id],{subject:r.subject,body:r.body,status:"ready",error:""}); }
+      catch(e){ Object.assign(state.drafts[t.id],{status:"error",error:e.message}); if(/key|password/i.test(e.message)) q.length=0; }
+      done++; prog.firstElementChild.style.width=(done/todo.length*100)+"%"; save(); renderEmails();
+    }
+  }
+  await Promise.all([worker(),worker(),worker()]);
+  setTimeout(()=>hide(prog),700);
+};
+
+// ---------------- emails UI ----------------
+const validEmail=s=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((s||"").trim());
+function composeHref(d){
+  const to=encodeURIComponent(d.to||""), su=encodeURIComponent(d.subject||""), bd=encodeURIComponent(d.body||"");
+  return $("#sendVia").value==="outlook" ? `https://outlook.office.com/mail/deeplink/compose?to=${to}&subject=${su}&body=${bd}` : `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bd}`;
+}
+function ids(){ return state.targets.filter(t=>state.drafts[t.id]).map(t=>t.id); }
+function readyIds(){ return ids().filter(id=>state.drafts[id].status==="ready" && validEmail(state.drafts[id].to)); }
+function updateStats(){
+  const all=ids(); $("#stWritten").textContent=all.filter(id=>!["writing","error"].includes(state.drafts[id].status)).length;
+  $("#stReady").textContent=readyIds().length; $("#stSent").textContent=all.filter(id=>state.drafts[id].status==="sent").length;
+  const smtp=$("#sendVia").value==="smtp", n=Math.min(readyIds().length, +$("#maxBatch").value||15);
+  $("#sendAll").disabled=!smtp||!n; $("#sendAll").textContent= smtp? `Send ${n} ready` : "Send all ready";
+  $("#sendAll").classList.toggle("hidden", !smtp); $("#testSend").classList.toggle("hidden", !smtp);
+}
+function updateSendTip(){
+  const smtp=$("#sendVia").value==="smtp";
+  $("#sendTip").innerHTML = smtp
+    ? (canSmtp() ? `Emails go out from <b>${esc(senderAddr())}</b>${$("#attach").checked&&state.file?` with <b>${esc(state.file.name)}</b> attached`:""}, ${+$("#delay").value||30}s apart.` : `Add your Gmail address and app password in <a href="#" class="openS">Settings</a> to send directly — or switch to opening drafts in Gmail.`)
+    : `Each <b>Send</b> opens a filled-in draft in your mail — you hit send there. (Attachments must be added by hand.)`;
+  document.querySelectorAll(".openS").forEach(a=>a.onclick=e=>{e.preventDefault();openSettings();});
+  updateStats();
+}
+$("#sendVia").onchange=()=>{ updateSendTip(); renderEmails(); };
+
+const REWRITES=[["","Rewrite…"],["Make it shorter — under 100 words.","Shorter"],["Make it bolder and more confident.","Bolder"],["Make it more formal.","More formal"],["Make it warmer and more personal.","Warmer"],["Write a completely different version with a new angle and new subject line.","New angle"],["Use the recipient's name naturally.","Use their name"]];
+
+function renderEmails(){
+  const smtp=$("#sendVia").value==="smtp";
+  $("#emails").innerHTML=ids().map(id=>{
+    const t=state.targets.find(x=>x.id===id), d=state.drafts[id];
+    const title=`<h3>${esc(t.company)} <span class="muted" style="font-weight:400">· ${esc(t.role)}</span></h3>`;
+    if(d.status==="writing") return `<div class="email"><div class="head">${title}<span class="status">Writing…</span></div><div class="loading"><span class="spinner"></span>Personalizing for ${esc(t.company)}…</div></div>`;
+    if(d.status==="error" && !d.body) return `<div class="email"><div class="head">${title}<button class="btn ghost sm" data-regen="${id}">Try again</button></div><div class="err">${esc(d.error)}</div></div>`;
+    const hint=(t.contacts||[]).slice(0,2).join(" or ");
+    return `<div class="email" data-id="${id}">
+      <div class="head">${title}<span class="status ${d.status}">${d.status==="sent"?"✓ Sent "+(d.sentAt||""):d.status==="opened"?"Opened in mail":"Draft"}</span></div>
+      <div class="row">
+        <div style="flex:2"><label>To ${hint?`<small>— best person: ${esc(hint)}</small>`:""}</label><input type="email" data-f="to" value="${esc(d.to)}" placeholder="name@${esc(t.domain||"company.com")}"></div>
+        <div><label>Their name <small>(optional)</small></label><input type="text" data-f="rname" value="${esc(d.rname)}" placeholder="e.g. Priya"></div>
+      </div>
+      <label>Subject</label><input type="text" data-f="subject" value="${esc(d.subject)}">
+      <label>Message</label><textarea data-f="body" rows="11">${esc(d.body)}</textarea>
+      <div class="actions">
+        ${smtp ? `<button class="btn accent" data-send="${id}" ${d.status==="sent"?"disabled":""}>${d.status==="sent"?"Sent":"Send"}</button>`
+               : `<a class="btn accent" data-open="${id}" href="${composeHref(d)}" target="_blank" rel="noopener">Open draft ↗</a>`}
+        <button class="btn ghost sm" data-copy="${id}">Copy</button>
+        <select data-tweak="${id}">${REWRITES.map(([v,l])=>`<option value="${esc(v)}">${l}</option>`).join("")}</select>
+        ${t.url?`<a class="btn ghost sm" href="${esc(t.url)}" target="_blank" rel="noopener">Job post ↗</a>`:""}
+      </div>
+      ${d.error?`<div class="err">${esc(d.error)}</div>`:""}
+    </div>`;
+  }).join("");
+
+  document.querySelectorAll(".email[data-id]").forEach(card=>{
+    const id=card.dataset.id;
+    card.querySelectorAll("[data-f]").forEach(inp=>inp.oninput=()=>{
+      state.drafts[id][inp.dataset.f]=inp.value; save(); updateStats();
+      const a=card.querySelector("[data-open]"); if(a) a.href=composeHref(state.drafts[id]);
+    });
+  });
+  document.querySelectorAll("[data-send]").forEach(b=>b.onclick=()=>sendOne(b.dataset.send, b));
+  document.querySelectorAll("[data-open]").forEach(a=>a.onclick=e=>{
+    const d=state.drafts[a.dataset.open];
+    if(!validEmail(d.to)){ e.preventDefault(); toast("Add a valid recipient first"); return; }
+    d.status="opened"; save(); setTimeout(renderEmails,300);
+  });
+  document.querySelectorAll("[data-copy]").forEach(b=>b.onclick=async()=>{
+    const d=state.drafts[b.dataset.copy];
+    try{ await navigator.clipboard.writeText(`Subject: ${d.subject}\n\n${d.body}`); toast("Copied"); }catch(_){ toast("Select the text and copy it"); }
+  });
+  document.querySelectorAll("[data-tweak]").forEach(s=>s.onchange=()=>{ if(s.value) regen(s.dataset.tweak, s.value); });
+  document.querySelectorAll("[data-regen]").forEach(b=>b.onclick=()=>regen(b.dataset.regen,""));
+  updateStats();
+}
+
+async function regen(id, revision){
+  const t=state.targets.find(x=>x.id===id), prev={...state.drafts[id]};
+  state.drafts[id]={...prev, status:"writing"}; renderEmails();
+  try{
+    const r=await api("/api/email", emailReq(t,{recipient_name:prev.rname||"", revision, previous: prev.body?{subject:prev.subject,body:prev.body}:null}));
+    state.drafts[id]={...prev, subject:r.subject, body:r.body, status: prev.status==="sent"?"sent":"ready", error:""};
+  }catch(e){ state.drafts[id]={...prev, status: prev.body?prev.status:"error", error:e.message}; }
+  save(); renderEmails();
+}
+
+function sendPayload(d, to){
+  const p={to, subject:d.subject, body:d.body, sender_name:$("#myname").value};
+  const c=smtpCreds(); if(c) p.smtp=c;
+  if($("#attach").checked && state.file) p.attachment=state.file;
+  return p;
+}
+async function sendOne(id, btn){
+  const d=state.drafts[id];
+  if(!validEmail(d.to)){ toast("Add a valid recipient first"); document.querySelector(`.email[data-id="${id}"] [data-f=to]`).focus(); return false; }
+  if(!canSmtp()){ openSettings(); toast("Add your Gmail details to send"); return false; }
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spinner"></span> Sending'; }
+  try{
+    await api("/api/send", sendPayload(d, d.to.trim()));
+    Object.assign(d,{status:"sent", error:"", sentAt:new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})});
+    save(); renderEmails(); return true;
+  }catch(e){ d.error=e.message; save(); renderEmails(); return false; }
+}
+
+$("#testSend").onclick=async()=>{
+  const first=ids().find(id=>state.drafts[id].body);
+  if(!first) return toast("Write an email first");
+  if(!canSmtp()){ openSettings(); return toast("Add your Gmail details to send"); }
+  const b=$("#testSend"); b.disabled=true; b.textContent="Sending…";
+  const d=state.drafts[first];
+  try{ await api("/api/send", sendPayload({...d, subject:"[TEST] "+d.subject}, senderAddr())); toast(`Test sent to ${senderAddr()}`); }
+  catch(e){ showMsg(e.message,true); }
+  finally{ b.disabled=false; b.textContent="Send me a test"; }
+};
+function showMsg(m,isErr){ const el=$("#sendMsg"); el.className=isErr?"err":"okmsg"; el.textContent=m; }
+
+$("#sendAll").onclick=async()=>{
+  if(!canSmtp()){ openSettings(); return toast("Add your Gmail details to send"); }
+  const batch=readyIds().slice(0, +$("#maxBatch").value||15);
+  const delay=Math.max(5, +$("#delay").value||30);
+  stopFlag=false; $("#sendAll").disabled=true; show($("#stopAll")); show($("#prog"));
+  let ok=0;
+  for(let n=0;n<batch.length;n++){
+    if(stopFlag) break;
+    showMsg(`Sending ${n+1} of ${batch.length}…`, false);
+    if(await sendOne(batch[n])) ok++;
+    $("#prog").firstElementChild.style.width=((n+1)/batch.length*100)+"%";
+    if(n<batch.length-1){
+      for(let s=delay;s>0 && !stopFlag;s--){ showMsg(`Sent ${ok} of ${batch.length} · next in ${s}s`, false); await new Promise(r=>setTimeout(r,1000)); }
+    }
+  }
+  showMsg(stopFlag?`Stopped — sent ${ok} of ${batch.length}.`:`Done — sent ${ok} of ${batch.length}.`, ok<batch.length && !stopFlag);
+  hide($("#stopAll")); setTimeout(()=>hide($("#prog")),800); updateStats();
+};
+$("#stopAll").onclick=()=>{ stopFlag=true; };
+
+// ---------------- boot ----------------
+load();
+try{ state.file=JSON.parse(sessionStorage.getItem("outreach-file")||"null"); if(state.file) $("#dropTitle").textContent="✓ "+state.file.name; }catch(e){}
+Object.values(state.drafts).forEach(d=>{ if(d.status==="writing"){ d.status="error"; d.error="Interrupted — try again."; } });
+FORM.forEach(id=>$("#"+id).addEventListener("change",save));
+["attach","delay","maxBatch"].forEach(id=>$("#"+id).addEventListener("change",()=>{ saveSettings(); updateSendTip(); }));
+if(state.targets.length) renderMatches();
+loadConfig().then(()=>{
+  if(Object.keys(state.drafts).length){ renderEmails(); go(3); }
+  else if(state.targets.length) go(2);
+});
+</script>
+</body>
+</html>
