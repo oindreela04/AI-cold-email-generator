@@ -13,7 +13,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from config import get_secret
-from email_generator import DEFAULT_MODEL, analyze_resume, generate_email, suggest_more
+from email_generator import PROVIDERS, analyze_resume, default_model, generate_email, server_key, server_provider, suggest_more
 from jobs import get_jobs
 from resume_parser import extract_text
 from sender import Mailer, is_valid_email
@@ -23,26 +23,36 @@ app = FastAPI(title="AI Cold Email Generator")
 MAX_RESUME_BYTES = 3 * 1024 * 1024  # Vercel request bodies are capped at 4.5 MB
 
 
-# ─────────────── auth: optional shared password so strangers can't spend your OpenAI credits ───────────────
+# ─────────────── auth: optional shared password so strangers can't use up your AI quota or send from your Gmail ───────────────
 def check_access(x_app_password: str | None = Header(default=None)):
     expected = get_secret("APP_PASSWORD")
     if expected and not (x_app_password and secrets.compare_digest(x_app_password, expected)):
         raise HTTPException(401, "Wrong or missing app password. Enter it in Settings.")
 
 
-def ai_opts(x_openai_key: str | None = Header(default=None), x_openai_model: str | None = Header(default=None)) -> dict:
-    key = get_secret("OPENAI_API_KEY") or x_openai_key
+def ai_opts(
+    x_ai_provider: str | None = Header(default=None),
+    x_ai_key: str | None = Header(default=None),
+    x_ai_model: str | None = Header(default=None),
+) -> dict:
+    """A key typed in Settings wins; otherwise use the key configured on the server."""
+    if x_ai_key:
+        provider = x_ai_provider if x_ai_provider in PROVIDERS else "groq"
+        key = x_ai_key
+    else:
+        provider = server_provider()
+        key = server_key(provider)
     if not key:
-        raise HTTPException(400, "No OpenAI API key. Set OPENAI_API_KEY on Vercel, or add your own key in Settings.")
-    return {"api_key": key, "model": x_openai_model or get_secret("OPENAI_MODEL", DEFAULT_MODEL)}
+        raise HTTPException(400, "No AI key yet. Get a free Groq key at console.groq.com/keys and paste it in Settings.")
+    return {"api_key": key, "provider": provider, "model": x_ai_model or default_model(provider)}
 
 
 def fail(e: Exception):
     msg = str(e)
-    if "api_key" in msg.lower() or "401" in msg:
-        raise HTTPException(401, "OpenAI rejected the API key.")
-    if "429" in msg or "rate" in msg.lower():
-        raise HTTPException(429, "OpenAI rate limit or quota reached — wait a moment or check your billing.")
+    if "api_key" in msg.lower() or "401" in msg or "invalid api key" in msg.lower():
+        raise HTTPException(401, "The AI provider rejected the API key — check it in Settings.")
+    if "429" in msg or "rate limit" in msg.lower() or "quota" in msg.lower():
+        raise HTTPException(429, "Free-tier limit reached for now — wait a minute and try again.")
     raise HTTPException(500, msg)
 
 
@@ -107,12 +117,14 @@ class SendIn(BaseModel):
 def config():
     """Tells the UI what's already configured on the server (never returns secret values)."""
     return {
-        "ai_ready": bool(get_secret("OPENAI_API_KEY")),
+        "ai_ready": bool(server_key(server_provider())),
+        "provider": server_provider(),
+        "providers": {k: {"label": v["label"], "model": v["model"]} for k, v in PROVIDERS.items()},
         "smtp_ready": bool(get_secret("EMAIL") and get_secret("EMAIL_PASS")),
         "sender_email": get_secret("EMAIL", ""),
         "needs_app_password": bool(get_secret("APP_PASSWORD")),
         "adzuna": bool(get_secret("ADZUNA_APP_ID") and get_secret("ADZUNA_APP_KEY")),
-        "model": get_secret("OPENAI_MODEL", DEFAULT_MODEL),
+        "model": default_model(server_provider()),
     }
 
 

@@ -2,7 +2,7 @@
 
 Upload your resume → get **companies that fit you** and **live job openings** → get a **personalized cold email for each one** → **send them from your own Gmail**, spaced out so you stay out of spam filters.
 
-Runs on **Vercel**: a FastAPI backend (`app.py`, deployed as a Vercel Function) plus a single-page frontend (`public/index.html`, served from Vercel's CDN).
+AI is powered by **Groq's free API** (no credit card), with Google Gemini (free) and OpenAI (paid) as options. Runs on **Vercel**: a FastAPI backend (`app.py`, deployed as a Vercel Function) plus a single-page frontend (`public/index.html`, served from Vercel's CDN).
 
 ## Features
 
@@ -20,7 +20,7 @@ Runs on **Vercel**: a FastAPI backend (`app.py`, deployed as a Vercel Function) 
 
 ```
 app.py              FastAPI API: /api/config, /api/parse, /api/analyze, /api/more, /api/email, /api/send
-email_generator.py  OpenAI prompts: resume analysis, company suggestions, email writing
+email_generator.py  AI prompts (Groq / Gemini / OpenAI): resume analysis, company suggestions, email writing
 jobs.py             Live openings from Remotive / Arbeitnow / Adzuna
 sender.py           SMTP sender (Gmail by default) with attachments
 resume_parser.py    PDF / DOCX / TXT → text
@@ -36,10 +36,10 @@ vercel.json         Function config (60s max duration)
 
 | Variable | Required? | What it does |
 |---|---|---|
-| `OPENAI_API_KEY` | Recommended | Powers matching and email writing. If you leave it out, each user enters their own key in the app's Settings. |
-| `APP_PASSWORD` | **Yes, if you set any key above** | Visitors must enter it before the app uses your OpenAI credits or your Gmail. |
+| `GROQ_API_KEY` | Recommended | **Free** key from [console.groq.com/keys](https://console.groq.com/keys). Powers matching and email writing. If you leave it out, each user pastes their own free key in Settings. |
+| `APP_PASSWORD` | Recommended if you set a key | Visitors must enter it before the app uses your AI quota or your Gmail. |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` | Optional | Use Gemini (free tier) or OpenAI (paid) instead. `AI_PROVIDER` picks one explicitly; `AI_MODEL` overrides the model. |
 | `EMAIL`, `EMAIL_PASS` | Optional | Default Gmail account + [App Password](https://myaccount.google.com/apppasswords) to send from. If they're not set, users enter their own in Settings. |
-| `OPENAI_MODEL` | Optional | Defaults to `gpt-4o-mini`. |
 | `ADZUNA_APP_ID`, `ADZUNA_APP_KEY`, `ADZUNA_COUNTRY` | Optional | More live listings (free key at developer.adzuna.com; country defaults to `in`). |
 | `SMTP_HOST`, `SMTP_PORT` | Optional | For providers other than Gmail. |
 
@@ -50,11 +50,15 @@ vercel.json         Function config (60s max duration)
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env        # fill in OPENAI_API_KEY at least
+cp .env.example .env        # add your free GROQ_API_KEY
 uvicorn app:app --reload    # open http://localhost:8000
 ```
 
 Or use `vercel dev` (Vercel CLI ≥ 48.1.8).
+
+## Free tier limits
+
+Groq's free plan allows about 30 requests and 8,000 tokens per minute (per account, as of late 2026). One resume analysis plus a handful of emails fits easily. If you hit the limit, the app waits and retries automatically, and otherwise asks you to try again in a minute.
 
 ## Gmail App Password
 
