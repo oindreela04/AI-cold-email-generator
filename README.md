@@ -4,6 +4,8 @@ Upload a resume, get matched with companies and live job openings, and send a pe
 
 **Live demo:** https://ai-cold-email-generator-eight.vercel.app
 
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg) ![Python](https://img.shields.io/badge/Python-3.12-blue.svg) ![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg) ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black.svg)
+
 ---
 
 ## Table of Contents
@@ -21,6 +23,7 @@ Upload a resume, get matched with companies and live job openings, and send a pe
 11. [Security & Privacy](#security--privacy)
 12. [Limitations](#limitations)
 13. [Roadmap](#roadmap)
+14. [License](#license)
 
 ---
 
@@ -270,3 +273,9 @@ The project deploys to Vercel with zero configuration. Vercel detects the FastAP
 - [ ] Persistent workspaces (Postgres) with per-user authentication
 - [ ] Export outreach history to CSV / Google Sheets
 - [ ] Cover-letter generation from the same profile
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE). © 2026 Oindreela Saha
