@@ -226,11 +226,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
     </div>
 
     <h4>AI</h4>
-    <div id="aiServer" class="ok-line hidden">✓ OpenAI key is set on the server</div>
-    <label for="oaKey">Your OpenAI API key <small id="oaOpt">(required)</small></label>
-    <input type="password" id="oaKey" placeholder="sk-…">
+    <div id="aiServer" class="ok-line hidden"></div>
+    <label for="aiProvider">AI provider</label>
+    <select id="aiProvider">
+      <option value="groq">Groq — free, no credit card</option>
+      <option value="gemini">Google Gemini — free tier</option>
+      <option value="openai">OpenAI — paid</option>
+    </select>
+    <label for="oaKey">API key <small id="oaOpt">(required)</small></label>
+    <input type="password" id="oaKey" placeholder="Paste your key">
+    <div class="tip" id="keyHelp"></div>
     <label for="oaModel">Model <small>(optional)</small></label>
-    <input type="text" id="oaModel" placeholder="gpt-4o-mini">
+    <input type="text" id="oaModel" placeholder="">
 
     <h4>Sending</h4>
     <div id="smtpServer" class="ok-line hidden"></div>
@@ -259,7 +266,7 @@ let stopFlag = false;
 // ---------------- storage (browser only) ----------------
 const KEY="outreach-v2", SKEY="outreach-settings";
 const FORM=["resume","role","loc","level","ctype","count","industries","myname","tone","links"];
-const SET=["appPw","oaKey","oaModel","smtpUser","smtpPass","delay","maxBatch"];
+const SET=["appPw","aiProvider","oaKey","oaModel","smtpUser","smtpPass","delay","maxBatch"];
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify({
   profile:state.profile, targets:state.targets, selected:[...state.selected], drafts:state.drafts,
   form:Object.fromEntries(FORM.map(id=>[id,$("#"+id).value])), live:$("#live").checked
@@ -287,8 +294,8 @@ function show(el){ el.classList.remove("hidden"); }
 function headers(json=true){
   const h={}; if(json) h["Content-Type"]="application/json";
   if($("#appPw").value) h["X-App-Password"]=$("#appPw").value;
-  if($("#oaKey").value) h["X-OpenAI-Key"]=$("#oaKey").value;
-  if($("#oaModel").value) h["X-OpenAI-Model"]=$("#oaModel").value;
+  if($("#oaKey").value){ h["X-AI-Key"]=$("#oaKey").value; h["X-AI-Provider"]=$("#aiProvider").value; }
+  if($("#oaModel").value) h["X-AI-Model"]=$("#oaModel").value;
   return h;
 }
 async function api(path, body, isForm=false){
@@ -311,15 +318,27 @@ async function loadConfig(){
   const s=state.server;
   $("#appPwBox").classList.toggle("hidden", !s.needs_app_password);
   $("#aiServer").classList.toggle("hidden", !s.ai_ready);
-  $("#oaOpt").textContent = s.ai_ready ? "(optional — overrides the server key)" : "(required)";
-  if(s.model) $("#oaModel").placeholder=s.model;
+  if(s.ai_ready) $("#aiServer").textContent=`✓ This app already has a ${(s.providers&&s.providers[s.provider]||{}).label||"AI"} key — nothing to add here.`;
+  $("#oaOpt").textContent = s.ai_ready ? "(optional — use your own instead)" : "(required)";
+  updateKeyHelp();
   if(s.smtp_ready){ show($("#smtpServer")); $("#smtpServer").textContent=`✓ Server sends from ${s.sender_email}. Fill these only to send from a different account.`; }
   checkSetup();
 }
+const KEY_HELP={
+  groq:'Free, no credit card: sign in at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> → <b>Create API key</b> → paste it here.',
+  gemini:'Free: get a key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Its free limits are tighter than Groq\'s.',
+  openai:'Paid: create a key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a>.'
+};
+function updateKeyHelp(){
+  const p=$("#aiProvider").value, s=state.server;
+  $("#keyHelp").innerHTML=KEY_HELP[p]||"";
+  $("#oaModel").placeholder=(s.providers&&s.providers[p]&&s.providers[p].model)||"";
+}
+$("#aiProvider").onchange=updateKeyHelp;
 function checkSetup(){
   const s=state.server, b=$("#setupBanner"); const msgs=[];
   if(s.needs_app_password && !$("#appPw").value) msgs.push("enter the app password");
-  if(!s.ai_ready && !$("#oaKey").value) msgs.push("add an OpenAI API key");
+  if(!s.ai_ready && !$("#oaKey").value) msgs.push("paste a free Groq API key (takes 1 minute)");
   if(msgs.length){ b.innerHTML=`To get started, open <a href="#" id="bannerLink">Settings</a> and ${msgs.join(" and ")}.`; show(b); $("#bannerLink").onclick=e=>{e.preventDefault();openSettings();}; }
   else hide(b);
   updateSendTip();
@@ -498,7 +517,7 @@ $("#genAll").onclick=async()=>{
       done++; prog.firstElementChild.style.width=(done/todo.length*100)+"%"; save(); renderEmails();
     }
   }
-  await Promise.all([worker(),worker(),worker()]);
+  await Promise.all([worker(),worker()]);
   setTimeout(()=>hide(prog),700);
 };
 

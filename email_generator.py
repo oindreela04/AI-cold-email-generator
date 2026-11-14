@@ -1,35 +1,110 @@
 """AI layer: reads the resume, suggests companies, and writes personalized cold emails."""
 import json
 
-from openai import OpenAI
+import re
+import time
+
+from openai import BadRequestError, OpenAI, RateLimitError
 
 from config import get_secret
 
-DEFAULT_MODEL = "gpt-4o-mini"
+# Every provider below speaks the OpenAI Chat Completions format, so one client works for all.
+PROVIDERS = {
+    "groq": {  # free tier, no credit card: https://console.groq.com/keys
+        "label": "Groq (free)",
+        "base_url": "https://api.groq.com/openai/v1",
+        "model": "openai/gpt-oss-120b",
+        "key_env": "GROQ_API_KEY",
+    },
+    "gemini": {  # free tier: https://aistudio.google.com/apikey
+        "label": "Google Gemini (free)",
+        "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
+        "model": "gemini-2.5-flash",
+        "key_env": "GEMINI_API_KEY",
+    },
+    "openai": {  # paid
+        "label": "OpenAI",
+        "base_url": None,
+        "model": "gpt-4o-mini",
+        "key_env": "OPENAI_API_KEY",
+    },
+}
+DEFAULT_PROVIDER = "groq"
 
 
-def _client(api_key: str | None = None) -> OpenAI:
-    key = api_key or get_secret("OPENAI_API_KEY")
+def server_provider() -> str:
+    """Provider configured on the server: AI_PROVIDER, else whichever provider has a key set."""
+    chosen = (get_secret("AI_PROVIDER") or "").lower()
+    if chosen in PROVIDERS:
+        return chosen
+    for name, p in PROVIDERS.items():
+        if get_secret(p["key_env"]):
+            return name
+    return DEFAULT_PROVIDER
+
+
+def server_key(provider: str) -> str | None:
+    return get_secret("AI_API_KEY") or get_secret(PROVIDERS[provider]["key_env"])
+
+
+def default_model(provider: str) -> str:
+    return get_secret("AI_MODEL") or PROVIDERS[provider]["model"]
+
+
+def _parse_json(text: str) -> dict:
+    text = (text or "").strip()
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        m = re.search(r"\{.*\}", text, re.S)  # model wrapped JSON in prose or ```fences```
+        if not m:
+            raise ValueError("The AI didn't return valid JSON — please try again.")
+        return json.loads(m.group(0))
+
+
+def _ask_json(prompt: str, api_key=None, model=None, temperature=0.7, provider=None) -> dict:
+    provider = provider if provider in PROVIDERS else server_provider()
+    key = api_key or server_key(provider)
     if not key:
-        raise RuntimeError("No OpenAI API key. Add OPENAI_API_KEY to .env / Streamlit secrets, or paste it in the sidebar.")
-    return OpenAI(api_key=key)
-
-
-def _model(model: str | None) -> str:
-    return model or get_secret("OPENAI_MODEL", DEFAULT_MODEL)
-
-
-def _ask_json(prompt: str, api_key=None, model=None, temperature=0.7) -> dict:
-    resp = _client(api_key).chat.completions.create(
-        model=_model(model),
+        raise RuntimeError(f"No {PROVIDERS[provider]['label']} API key. Add one in Settings or set {PROVIDERS[provider]['key_env']} on the server.")
+    client = OpenAI(api_key=key, base_url=PROVIDERS[provider]["base_url"], max_retries=0, timeout=50)
+    model = model or default_model(provider)
+    kwargs = dict(
+        model=model,
         temperature=temperature,
-        response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": "You are an expert tech recruiter and career coach. Always reply with valid JSON only."},
             {"role": "user", "content": prompt},
         ],
     )
-    return json.loads(resp.choices[0].message.content)
+    if "gpt-oss" in model:
+        kwargs["reasoning_effort"] = "low"  # fewer hidden reasoning tokens → faster, stays inside free-tier limits
+
+    use_json_mode = True
+    for attempt in range(4):
+        try:
+            if use_json_mode:
+                resp = client.chat.completions.create(response_format={"type": "json_object"}, **kwargs)
+            else:
+                resp = client.chat.completions.create(**kwargs)
+            return _parse_json(resp.choices[0].message.content)
+        except BadRequestError as e:
+            # some models reject JSON mode or the reasoning flag — fall back to plain prompting
+            if use_json_mode or "reasoning_effort" in kwargs:
+                use_json_mode = False
+                kwargs.pop("reasoning_effort", None)
+                continue
+            raise
+        except RateLimitError as e:
+            if attempt == 3:
+                raise
+            wait = 6
+            try:
+                wait = float(e.response.headers.get("retry-after", wait))
+            except Exception:
+                pass
+            time.sleep(min(max(wait, 1), 15))  # free tiers have per-minute token caps
+    raise RuntimeError("The AI service is busy — try again in a minute.")
 
 
 COMPANY_SHAPE = """{
@@ -46,7 +121,7 @@ COMPANY_SHAPE = """{
 }"""
 
 
-def analyze_resume(resume: str, prefs: dict, count: int = 9, api_key=None, model=None) -> dict:
+def analyze_resume(resume: str, prefs: dict, count: int = 9, api_key=None, model=None, provider=None) -> dict:
     """Returns {"profile": {...}, "companies": [...]}."""
     prompt = f"""Read the candidate's resume and preferences. Build a short profile, then suggest {count} real,
 currently-operating companies that would be a strong fit and plausibly hire for these roles.
@@ -64,13 +139,13 @@ PREFERENCES: {json.dumps(prefs)}
 
 RESUME:
 {resume}"""
-    data = _ask_json(prompt, api_key, model)
+    data = _ask_json(prompt, api_key, model, provider=provider)
     data.setdefault("profile", {})
     data["companies"] = sorted(data.get("companies", []), key=lambda c: -float(c.get("fit_score") or 0))
     return data
 
 
-def suggest_more(resume: str, profile: dict, prefs: dict, exclude: list[str], count: int = 6, api_key=None, model=None) -> list[dict]:
+def suggest_more(resume: str, profile: dict, prefs: dict, exclude: list[str], count: int = 6, api_key=None, model=None, provider=None) -> list[dict]:
     prompt = f"""Suggest {count} MORE real companies that fit this candidate.
 Do NOT repeat any of these: {", ".join(exclude)}.
 Return JSON: {{"companies": [{COMPANY_SHAPE}]}}
@@ -79,7 +154,7 @@ PREFERENCES: {json.dumps(prefs)}
 CANDIDATE PROFILE: {json.dumps(profile)}
 RESUME:
 {resume}"""
-    return _ask_json(prompt, api_key, model).get("companies", [])
+    return _ask_json(prompt, api_key, model, provider=provider).get("companies", [])
 
 
 def generate_email(
@@ -94,6 +169,7 @@ def generate_email(
     previous: dict | None = None,
     api_key=None,
     model=None,
+    provider=None,
 ) -> dict:
     """Returns {"subject": str, "body": str} personalized for one company/job."""
     company = target.get("company") or target.get("name", "the company")
@@ -126,5 +202,5 @@ RESUME:
 {resume}
 
 Return JSON: {{"subject": string, "body": string (plain text, use \\n for line breaks)}}"""
-    data = _ask_json(prompt, api_key, model, temperature=0.8)
+    data = _ask_json(prompt, api_key, model, temperature=0.8, provider=provider)
     return {"subject": data.get("subject", "").strip(), "body": data.get("body", "").strip()}
